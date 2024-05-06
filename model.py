@@ -340,7 +340,7 @@ def generate_model(resolution, model_type, num_folds=5):
         optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
-        num_epochs = 10
+        num_epochs = 30
         losses = train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs)
         
     plot_loss(losses, num_epochs)
