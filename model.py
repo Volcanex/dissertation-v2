@@ -161,7 +161,7 @@ class RIRModel(RIRModelBase):
 def train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Using device: "+str(device).upper())
-    model.to(device)
+    model = model.to(device)  # Move the model to the desired device
 
     best_loss = float('inf')
     best_model_weights = None
@@ -170,12 +170,15 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs
     for epoch in range(num_epochs):
         model.train()
         for batch_idx, (inputs, targets) in enumerate(train_loader):
+            inputs = inputs.to(device)  
+            targets = targets.to(device)  
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, targets)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
+
 
         scheduler.step()
 
