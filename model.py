@@ -159,8 +159,8 @@ class RIRModel(RIRModelBase):
         return output
 
 def train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs):
-    #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    #device = torch.device('cpu')
     print("Using device: "+str(device).upper())
     model = model.to(device)
 
