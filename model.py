@@ -3,7 +3,34 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import re
-import sounddevice as sd
+try:
+    import sounddevice as sd
+    def convolve_play(npy_file, audio_data, sample_rate):
+        print("Convolving...")
+        data = np.load(npy_file)
+        convolved_audio = np.convolve(audio_data, data)
+        convolved_audio /= np.max(np.abs(convolved_audio))
+        print("Playing...")
+        sd.play(convolved_audio, sample_rate)
+        sd.wait()  
+
+    def convolve_play_data(rir_data, audio_data, sample_rate):
+        print("Convolving...")
+        convolved_audio = np.convolve(audio_data, rir_data)
+        convolved_audio /= np.max(np.abs(convolved_audio))
+        print("Playing...")
+        try:
+            sd.play(convolved_audio, sample_rate)
+            sd.wait()
+        except:
+            print("Error playing audio on your machine.")
+except:
+    def convolve_play(npy_file, audio_data, sample_rate):
+        print("Sound system error!")
+
+    def convolve_play_data(rir_data, audio_data, sample_rate):
+        print("Sound system error!")
+
 import librosa
 import time
 from data_reader import visualize_room
@@ -13,26 +40,6 @@ import torch
 print(torch.cuda.is_available())
 
 print("Start.")
-
-def convolve_play(npy_file, audio_data, sample_rate):
-    print("Convolving...")
-    data = np.load(npy_file)
-    convolved_audio = np.convolve(audio_data, data)
-    convolved_audio /= np.max(np.abs(convolved_audio))
-    print("Playing...")
-    sd.play(convolved_audio, sample_rate)
-    sd.wait()  
-
-def convolve_play_data(rir_data, audio_data, sample_rate):
-    print("Convolving...")
-    convolved_audio = np.convolve(audio_data, rir_data)
-    convolved_audio /= np.max(np.abs(convolved_audio))
-    print("Playing...")
-    try:
-        sd.play(convolved_audio, sample_rate)
-        sd.wait()
-    except:
-        print("Error playing audio on your machine.")
 
 def load_all_config_data(resolution, return_time_taken=False):
     config_data = []
@@ -215,8 +222,7 @@ def compare_rirs(model, config_data, audio_data, sample_rate, resolution):
         mic_position = rir_data[0][0]
         input_data = torch.tensor(np.concatenate((source_location, room_dim, [rt60], mic_position)), dtype=torch.float32)
 
-        
-
+    
         t1 = time.time()
         with torch.no_grad():
             model_output = model(input_data.unsqueeze(0)).squeeze(0).numpy()
