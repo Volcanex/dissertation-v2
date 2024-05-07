@@ -3,40 +3,44 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import re
-
 import librosa
 import time
-from data_reader import visualize_room
 from neuralop.models import FNO, TFNO
 import torch.nn as nn
 import torch
-print(torch.cuda.is_available())
 
-print("Start.")
-
-"""
-import sounddevice as sd
-
-def convolve_play(npy_file, audio_data, sample_rate):
-    print("Convolving...")
-    data = np.load(npy_file)
-    convolved_audio = np.convolve(audio_data, data)
-    convolved_audio /= np.max(np.abs(convolved_audio))
-    print("Playing...")
-    sd.play(convolved_audio, sample_rate)
-    sd.wait()  
-
-def convolve_play_data(rir_data, audio_data, sample_rate):
-    print("Convolving...")
-    convolved_audio = np.convolve(audio_data, rir_data)
-    convolved_audio /= np.max(np.abs(convolved_audio))
-    print("Playing...")
-    try:
+try:
+    from data_reader import visualize_room
+    import sounddevice as sd
+    def convolve_play(npy_file, audio_data, sample_rate):
+        print("Convolving...")
+        data = np.load(npy_file)
+        convolved_audio = np.convolve(audio_data, data)
+        convolved_audio /= np.max(np.abs(convolved_audio))
+        print("Playing...")
         sd.play(convolved_audio, sample_rate)
-        sd.wait()
-    except:
-        print("Error playing audio on your machine.")
-"""
+        sd.wait()  
+
+    def convolve_play_data(rir_data, audio_data, sample_rate):
+        print("Convolving...")
+        convolved_audio = np.convolve(audio_data, rir_data)
+        convolved_audio /= np.max(np.abs(convolved_audio))
+        print("Playing...")
+        try:
+            sd.play(convolved_audio, sample_rate)
+            sd.wait()
+        except:
+            print("Error playing audio on your machine.")
+
+except OSError:
+    def convolve_play(npy_file, audio_data, sample_rate):
+        print("Can't play audio")
+    
+    def convolve_play_data(rir_data, audio_data, sample_rate):
+        print("Can't play audio")
+
+print(torch.cuda.is_available())
+print("Start.")
 
 def load_all_config_data(resolution, return_time_taken=False):
     config_data = []
@@ -219,7 +223,8 @@ def compare_rirs(model, config_data, audio_data, sample_rate, resolution):
         mic_position = rir_data[0][0]
         input_data = torch.tensor(np.concatenate((source_location, room_dim, [rt60], mic_position)), dtype=torch.float32)
 
-    
+        
+
         t1 = time.time()
         with torch.no_grad():
             model_output = model(input_data.unsqueeze(0)).squeeze(0).numpy()
@@ -343,7 +348,7 @@ def generate_model(resolution, model_type, num_folds=5):
         optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
-        num_epochs = 30
+        num_epochs = 10
         losses = train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs)
         
     plot_loss(losses, num_epochs)
