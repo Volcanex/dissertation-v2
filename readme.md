@@ -22,4 +22,12 @@ Use data_reader.py to inspect the dataset.
 Run simple_rnn to build a RNN model. You can change the parameters inside the file. Also use 
 this file to compare the models to the original data using option three.
 
-I have included a pretrained model you can load, you need to type out the full filename. 
+*VM Stuff*
+
+sudo git clone https://github.com/Volcanex/finaldaydis.git
+cd finaldaydis
+sudo -i
+python -m venv myenv
+source myenv/bin/activate
+pip install -r requirements.txt   
+pip install torch torchvision

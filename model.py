@@ -159,9 +159,9 @@ class RIRModel(RIRModelBase):
         return output
 
 def train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs):
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    #device = torch.device('cpu')
-    print("Using device: "+str(device).upper())
+    #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cpu')
+    print("Using device: "+str(device).upper()+"\nStarting training:\n_________________________________________________________________\n\n")
     model = model.to(device)
 
     best_loss = float('inf')
@@ -179,7 +179,6 @@ def train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
-
 
         scheduler.step()
 
@@ -226,8 +225,6 @@ def compare_rirs(model, config_data, audio_data, sample_rate, resolution):
 
         mic_position = rir_data[0][0]
         input_data = torch.tensor(np.concatenate((source_location, room_dim, [rt60], mic_position)), dtype=torch.float32)
-
-        
 
         t1 = time.time()
         with torch.no_grad():
@@ -310,71 +307,157 @@ def load_model():
         print(f"Model file not found at {model_path}")
         return None
     
-def generate_model(resolution, model_type, num_folds=5):
+def random_search(model_type, resolution, num_iterations):
     config_data = load_all_config_data(resolution, return_time_taken=True)
     dataset = RIRDataset(config_data, resolution)
 
-    fold_sizes = [len(dataset) // num_folds] * num_folds
-    fold_sizes[-1] += len(dataset) % num_folds  # Adjust the last fold size
+    best_model = None
+    best_loss = float('inf')
 
-    kfold = torch.utils.data.random_split(dataset, fold_sizes)
-
-    for fold, fold_dataset in enumerate(kfold):
-        print(f"Fold {fold+1}/{num_folds}")
-        
-        train_indices = list(range(len(dataset)))
-        test_indices = list(fold_dataset.indices)
-        for i in test_indices:
-            train_indices.remove(i)
-        
-        train_dataset = torch.utils.data.Subset(dataset, train_indices)
-        test_dataset = torch.utils.data.Subset(dataset, test_indices)
-        
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
-        test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False)
+    for i in range(num_iterations):
+        print(f"Random Search Iteration {i+1}/{num_iterations}")
 
         if model_type == "rnn":
-            input_size = 10
-            hidden_size = 1024
-            num_layers = 3
-            output_size = dataset.rirs.shape[1]
-            model = RIRModel(input_size, hidden_size, num_layers, output_size, resolution)
+            raise ValueError("No random search for RNN implemented")
+
         elif model_type == "fno":
-            modes = (16, 16)  # Example modes value
-            width = 64  # Example width value
-            output_size = dataset.rirs.shape[1]  # Get the expected output size from the dataset
-            rank = 0.1
-            model = FNOModel(modes, width, output_size, resolution, rank)
+
+            modes_range = [8, 16, 32]
+            width_range = [32, 64, 128]
+            rank_range = [0.1, 0.2, 0.3]
+            learning_rate_range = [-5, -3]
+            batch_size_range = [16, 32, 64]
+
+            print(f"\n\n ----------------------------------------------------\nHyperparameter Ranges:\n")
+            print(f"  Modes: {modes_range}")
+            print(f"  Width: {width_range}")
+            print(f"  Rank: {rank_range}")
+            print(f"  Learning Rate: 10^{learning_rate_range}")
+            print(f"  Batch Size: {batch_size_range}")
+
+            modes = tuple(np.random.choice(modes_range, size=2))
+            width = np.random.choice(width_range)
+            rank = np.random.choice(rank_range)
+            learning_rate = 10 ** np.random.uniform(*learning_rate_range)
+            batch_size = np.random.choice(batch_size_range)
+            model = FNOModel(modes, width, dataset.rirs.shape[1], resolution, rank)
+
+            print(f"\n\n ----------------------------------------------------\nSelected Hyperparameters:\n")
+            print(f" Modes: {modes}")
+            print(f" Width: {width}")
+            print(f" Rank: {rank}")
+            print(f" Learning Rate: {learning_rate:.6f}")
+            print(f" Batch Size: {batch_size}")
+
         else:
             raise ValueError(f"Invalid model type: {model_type}")
 
         criterion = torch.nn.MSELoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.00001)
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+
+        train_loader = torch.utils.data.DataLoader(dataset, batch_size=int(batch_size), shuffle=True)
 
         num_epochs = 10
         losses = train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs)
-        
-    plot_loss(losses, num_epochs)
-    if num_epochs > 10:
-        plot_moving_average(losses, 10, num_epochs)
 
-    model_name = input("Enter the model name: ") + f"_{model_type}"
-    model_path = model_name + ".pth"
+        if losses[-1] < best_loss:
+            best_loss = losses[-1]
+            best_model = model
+
+    return best_model
+
+def display_model_info(model):
+    try:
+        if isinstance(model, FNOModel):
+            print("\n\n******************************************************\nFNO Model Information:\n")
+            print(f"  Modes: {model.fno.n_modes}")
+            print(f"  Width: {model.fno.n_modes_width}")
+            print(f"  Rank: {model.fno.rank}")
+            print(f"  Output Size: {model.fno.out_channels}")
+    except:
+        print("Model info failed")
     
-    checkpoint = {
-        'model_type': model_type,
-        'state_dict': model.state_dict(),
-        'resolution': resolution,
-        'modes': modes,
-        'width': width,
-        'output_size': output_size,
-        'rank': rank
-    }
-    torch.save(checkpoint, model_path)
-    print(f"Model saved as {model_path}")
+    else:
+        print("Model information is only available for FNO models.")
+    
+def generate_model(resolution, model_type, use_random_search=False, num_folds=5, num_iterations=10):
+    
+    if use_random_search:
+        
+        model = random_search(model_type, resolution, num_iterations)
+        display_model_info(model)
+        
+    else:
+        config_data = load_all_config_data(resolution, return_time_taken=True)
+        dataset = RIRDataset(config_data, resolution)
 
-    return model
+        fold_sizes = [len(dataset) // num_folds] * num_folds
+        fold_sizes[-1] += len(dataset) % num_folds  # Adjust the last fold size
+
+        kfold = torch.utils.data.random_split(dataset, fold_sizes)
+
+        for fold, fold_dataset in enumerate(kfold):
+            print(f"Fold {fold+1}/{num_folds}")
+            
+            train_indices = list(range(len(dataset)))
+            test_indices = list(fold_dataset.indices)
+            for i in test_indices:
+                train_indices.remove(i)
+            
+            train_dataset = torch.utils.data.Subset(dataset, train_indices)
+            test_dataset = torch.utils.data.Subset(dataset, test_indices)
+            
+            train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
+            test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+            if model_type == "rnn":
+                input_size = 10
+                hidden_size = 1024
+                num_layers = 3
+                output_size = dataset.rirs.shape[1]
+                model = RIRModel(input_size, hidden_size, num_layers, output_size, resolution)
+                display_model_info(model)
+
+            elif model_type == "fno":
+                modes = (16, 16)  # Example modes value
+                width = 64  # Example width value
+                output_size = dataset.rirs.shape[1]  # Get the expected output size from the dataset
+                rank = 0.1
+                model = FNOModel(modes, width, output_size, resolution, rank)
+                display_model_info(model)
+            else:
+                raise ValueError(f"Invalid model type: {model_type}")
+        
+
+            criterion = torch.nn.MSELoss()
+            optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+            scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+
+            num_epochs = 10
+            losses = train_model(model, train_loader, criterion, optimizer, scheduler, num_epochs)
+        
+        
+        plot_loss(losses, num_epochs)
+        if num_epochs > 10:
+            plot_moving_average(losses, 10, num_epochs)
+
+        model_name = input("Enter the model name: ") + f"_{model_type}"
+        model_path = model_name + ".pth"
+        
+        checkpoint = {
+            'model_type': model_type,
+            'state_dict': model.state_dict(),
+            'resolution': resolution,
+            'modes': modes,
+            'width': width,
+            'output_size': output_size,
+            'rank': rank
+        }
+        torch.save(checkpoint, model_path)
+        print(f"Model saved as {model_path}")
+
+        return model
 
 def menu(model):
     while True:
@@ -396,7 +479,8 @@ def menu(model):
         elif choice == "2":
             resolution = str(float(input("Enter the resolution (e.g., 2.0): ")))
             model_type = input("Enter the model type (rnn/fno): ")
-            model = generate_model(resolution, model_type)
+            use_random_search = input("Use random search? (y/n): ").lower() == 'y'
+            model = generate_model(resolution, model_type, use_random_search)
         elif choice == "3":
             if model is None:
                 print("No model loaded. Please load or generate a model first.")
