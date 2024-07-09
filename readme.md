@@ -31,13 +31,11 @@ cd dissertation-v2
 python -m venv myvenv
 myvenv\Scripts\activate.bat  # On Windows
 source myvenv/bin/activate  # On Unix or MacOS
-
 ```
 3. Install packages
 
  ```
 pip install -r requirements.txt
-
 ```
 VM Setup:
 
