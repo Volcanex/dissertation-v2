@@ -3,7 +3,7 @@
 
 This project focuses on optimizing and dynamically generating high-quality reverb using Fourier Neural Operators (FNOs) for efficient performance on lower-end hardware.
 
-https://docs.google.com/viewer?url=${https://github.com/Volcanex/dissertation-v2/blob/master/dissertation.pdf}
+https://docs.google.com/document/d/1b9CEbe8Fds-Hz4iyBhn1aJ4fVyc5H4zROjrzYYX7JlY/edit?usp=sharing
 
 ## Project Overview
 
