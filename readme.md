@@ -19,23 +19,29 @@ It's recommended to use a virtual environment with Python 3.11.7, as this is the
 ## Installation
 
 1. Clone the repository:
-   
+
+```
 git clone https://github.com/Volcanex/dissertation-v2.git
 cd dissertation-v2
+```
 
 2. Create and activate a virtual environment:
 
+```
 python -m venv myvenv
 myvenv\Scripts\activate.bat  # On Windows
 source myvenv/bin/activate  # On Unix or MacOS
 
+```
 3. Install packages
- 
+
+ ```
 pip install -r requirements.txt
 
+```
 VM Setup:
 
-'''
+```
 sudo git clone https://github.com/Volcanex/dissertation-v2.git
 cd dissertation-v2
 sudo -i
@@ -43,4 +49,4 @@ python -m venv myenv
 source myenv/bin/activate
 pip install -r requirements.txt
 pip install torch torchvision
-'''
+```
