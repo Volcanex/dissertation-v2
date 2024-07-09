@@ -1,33 +1,44 @@
-You'll need Python 3.11.7 with pip to use this software. 
 
-*It's useful to make a venv here with python Python 3.11.7, that's the supported version for this program*
+# Fourier Neural Operator for High-Quality Reverb Generation
 
-To build the python enviroment for this project: 
-Run in the command line: 
+This project focuses on optimizing and dynamically generating high-quality reverb using Fourier Neural Operators (FNOs) for efficient performance on lower-end hardware.
+
+https://docs.google.com/viewer?url=${https://github.com/Volcanex/dissertation-v2/blob/master/dissertation.pdf}
+
+## Project Overview
+
+This artifact has been developed using the agile Cowboy software methodology (Hollar, 2006) to adapt to challenges in this speculative area while maintaining core objectives. The program implements an FNO architecture capable of quickly synthesizing accurate room impulse responses (RIRs) based on unseen parameters, outperforming traditional hard-coded methods in speed.
+
+## Requirements
+
+- Python 3.11.7
+- pip
+
+It's recommended to use a virtual environment with Python 3.11.7, as this is the supported version for this program.
+
+## Installation
+
+1. Clone the repository:
+   
+git clone https://github.com/Volcanex/dissertation-v2.git
+cd dissertation-v2
+
+2. Create and activate a virtual environment:
 
 python -m venv myvenv
-myvenv\Scripts\activate.bat
+myvenv\Scripts\activate.bat  # On Windows
+source myvenv/bin/activate  # On Unix or MacOS
+
+3. Install packages
+ 
 pip install -r requirements.txt
 
-*To build the dataset from scratch run generate_dataset.py*
+VM Setup:
 
-It will overwrite the pre-generated files in here. Be careful to not use any half-generated datasets. Generally this means deleting whatever the smallest resolution directiory it begins to make. 
-
-*Use data_reader.py*
-
-Use data_reader.py to inspect the dataset.
-
-*Run simple_rnn*
-
-Run simple_rnn to build a RNN model. You can change the parameters inside the file. Also use 
-this file to compare the models to the original data using option three.
-
-*VM Stuff*
-
-sudo git clone https://github.com/Volcanex/finaldaydis.git
-cd finaldaydis
+sudo git clone https://github.com/Volcanex/dissertation-v2.git
+cd dissertation-v2
 sudo -i
 python -m venv myenv
 source myenv/bin/activate
-pip install -r requirements.txt   
+pip install -r requirements.txt
 pip install torch torchvision
