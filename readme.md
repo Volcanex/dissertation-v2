@@ -35,6 +35,7 @@ pip install -r requirements.txt
 
 VM Setup:
 
+'''
 sudo git clone https://github.com/Volcanex/dissertation-v2.git
 cd dissertation-v2
 sudo -i
@@ -42,3 +43,4 @@ python -m venv myenv
 source myenv/bin/activate
 pip install -r requirements.txt
 pip install torch torchvision
+'''
